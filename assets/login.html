@@ -9,7 +9,7 @@
 <body>
     <section class="form-component">
         <section class="form-container">
-            <form>
+            <form action="http://localhost:8081/assets/login.html" onsubmit="return false;">
                 <section class="fields-container">
                     <section class="fields">
                         <label>Username: </label>
@@ -24,7 +24,7 @@
                         <input type="password" id="password" placeholder="Password" value="" name="password"/>
                     </section>
                 </section>
-                <button>submit</button>
+                <button onclick="noReload()">submit</button>
             </form>
         </section>
     </section>
