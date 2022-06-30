@@ -16,7 +16,7 @@ func main() {
 	// this path will be valid for
 	r.HandleFunc("/", handler).Methods("GET")
 	r.HandleFunc("/hello", handler).Methods("GET")
-	r.HandleFunc("/contact", handler2).Methods("GET")
+	r.HandleFunc("/iss", handler2).Methods("GET")
 
 	staticFileDirectory := http.Dir("./assets/") //point to static file
 	staticFileHandler := http.StripPrefix("/assets/", http.FileServer(staticFileDirectory))
@@ -30,5 +30,5 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func handler2(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Contact Me!")
+	fmt.Fprintf(w, "ISS")
 }
