@@ -1,34 +1,31 @@
 package main
 
 import (
-	// Import the gorilla/mux library we just installed
-	"fmt"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 )
 
+type HelloWorld struct {
+	Message string `json:"message"`
+}
+
 func main() {
-	// Declare a new router
-	r := mux.NewRouter()
+	e := echo.New()
+	e.GET("/", func(c echo.Context) error {
+		return c.String(http.StatusOK, "Hello, World!")
+	})
+	e.GET("/contact", func(c echo.Context) error {
+		return c.String(http.StatusOK, "Contact!")
+	})
 
-	// This is where the router is useful, it allows us to declare methods that
-	// this path will be valid for
-	r.HandleFunc("/", handler).Methods("GET")
-	r.HandleFunc("/hello", handler).Methods("GET")
-	r.HandleFunc("/iss", handler2).Methods("GET")
-
-	staticFileDirectory := http.Dir("./assets/") //point to static file
-	staticFileHandler := http.StripPrefix("/assets/", http.FileServer(staticFileDirectory))
-	r.PathPrefix("/assets/").Handler(staticFileHandler).Methods("GET") //parses the url	and returns the file requested
-
-	http.ListenAndServe(":8081", r)
+	e.GET("/contact/:name", GreetingsWithParams)
+	e.Logger.Fatal(e.Start(":1323"))
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello World!!")
-}
-
-func handler2(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "ISS")
+func GreetingsWithParams(c echo.Context) error {
+	params := c.Param("name")
+	return c.JSON(http.StatusOK, HelloWorld{
+		Message: "Hello World, my name is " + params,
+	})
 }

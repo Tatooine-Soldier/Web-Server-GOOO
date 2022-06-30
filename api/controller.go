@@ -2,23 +2,13 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
 	"net/http"
+
+	"github.com/labstack/echo"
 )
 
-func main() {
-	resp, err := http.Get("http://localhost:8081/assets/login.html?username=tom&password=123")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(string(body))
+func queryParams(c echo.Context) error {
+	catName := c.QueryParam("name")
+	catType := c.QueryParam("type")
+	return c.String(http.StatusOK, fmt.Sprintf("your cat name is : %s\nand cat type is : %s\n", catName, catType))
 }
