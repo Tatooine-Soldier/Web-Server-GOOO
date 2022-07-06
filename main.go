@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -21,13 +22,6 @@ type HelloWorld struct {
 type Person struct {
 	Name string `json:"name"`
 }
-
-const (
-	DB_HOST = "127.0.0.1"
-	DB_USER = "root"
-	DB_PASS = "pass"
-	DB_NAME = "name"
-)
 
 func main() {
 	e := echo.New()
@@ -78,51 +72,59 @@ func Tom(c echo.Context) error {
 }
 
 func Home(c echo.Context) error {
-	err := connectDB(c)
+	crud := c.QueryParam("action")
+	if crud == "" {
+		return c.String(http.StatusBadRequest, "Error: no action recieved")
+	}
+
+	err := connectDB(c, crud)
 	if err != nil {
 		c.String(http.StatusBadGateway, fmt.Sprintf("err->  %v", err))
 	}
-	return c.String(http.StatusOK, "Welcome Home!")
+	return nil
 }
 
 func Contact(c echo.Context) error {
 	return c.String(http.StatusOK, "Contact!")
 }
 
-func connectDB(c echo.Context) error {
-
-	// db, err := sql.Open("mysql", "root:YES@tcp(127.0.0.1:3306)/users")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// 	fmt.Print("error")
-	// }
-	// defer db.Close()
-
-	// insert, err := db.Query("INSERT INTO users VALUES(1, 'goman', 'gains')")
-	// if err != nil {
-	// 	panic(err.Error())
-	// }
-
-	// defer insert.Close()
-
-	// fmt.Print("Successfully connected to database")
-
+func connectDB(c echo.Context, crud string) error {
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err != nil {
-		panic(err)
+		return c.String(http.StatusFailedDependency, fmt.Sprintf("Error: cannot connect to MongoDB: %v", err))
 	}
 
+	switch crud {
+	case "inserted":
+		insertUsers(c, client)
+	}
+
+	return c.String(http.StatusOK, fmt.Sprintf("Successfully performed '%v' in MongoDB", crud))
+
+}
+
+func ping(client *mongo.Client) {
 	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
 		panic(err)
 	}
+}
 
-	usersCollection := client.Database("testing").Collection("users")
+func insertUsers(c echo.Context, client *mongo.Client) error {
+	usersCollection := client.Database("usernames").Collection("users")
 
-	user := bson.D{{"id", 0}, {"fname", "TEST"}, {"lname", "TEST"}}
+	param := c.QueryParam("username")
+	if param == "" {
+		return c.String(http.StatusBadRequest, "Error: no username specified")
+	}
+
+	rand.Seed(20)
+	rn := rand.Intn(1000)
+	user := bson.D{{"uid", rn}, {"username", param}}
 	result, err := usersCollection.InsertOne(context.TODO(), user)
 	if err != nil {
 		panic(err)
 	}
+
 	fmt.Println(result.InsertedID)
 	return nil
 }
