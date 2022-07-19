@@ -2,38 +2,64 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"html/template"
 	"math/rand"
 	"net/http"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+var tpl *template.Template
+var ErrServeHTMLFile = errors.New("failed to retrive webpage")
+
 type HelloWorld struct {
 	Message string `json:"message"`
 }
 
 type Person struct {
-	Name string `json:"name"`
+	UserName string
+	Password string
 }
 
 func main() {
-	e := echo.New()
-	e.GET("/", Home)
-	e.GET("/contact", Contact)
+	// e := echo.New()
+	// // e.GET("/", Home)
+	// e.GET("/contact", Contact)
 
-	g := e.Group("/user")
-	g.GET("/:name", Tom)
-	g.Use(middleware.Logger())
+	// g := e.Group("/user")
+	// g.GET("/:name", Tom)
+	// // g.POST("/:name", createUser)
+	// g.Use(middleware.Logger())
 
-	e.GET("/params/:data", getParams)
-	e.Logger.Fatal(e.Start(":1323"))
+	// http.Handle("/", http.FileServer(http.Dir("./assets")))
+	// http.Handle("/login", http.FileServer(http.Dir("./assets ")))
+
+	// http.ListenAndServe(":3000", nil)
+
+	// e.GET("/params/:data", getParams)
+	// e.Logger.Fatal(e.Start(":1323"))
+
+	http.Handle("/", http.FileServer(http.Dir("./assets")))
+	http.Handle("/login", http.FileServer(http.Dir("./assets ")))
+	http.HandleFunc("/process", process)
+
+	http.ListenAndServe(":3000", nil)
+}
+
+func init() {
+	tpl = template.Must(template.ParseGlob("assets/*.gohtml"))
+}
+
+func serveFiles(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(r.URL.Path)
 }
 
 func getParams(c echo.Context) error {
@@ -47,6 +73,24 @@ func getParams(c echo.Context) error {
 	datatype := c.Param("data")
 
 	return c.JSON(http.StatusBadRequest, fmt.Sprintf("Invalid parameter type: %v", datatype))
+}
+
+func process(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Processing...")
+	usr := r.FormValue("username")
+	pw := r.FormValue("password")
+
+	person := Person{
+		UserName: usr,
+		Password: pw,
+	}
+
+	tpl.ExecuteTemplate(w, "in.gohtml", person)
+	// if err != nil {
+	// 	return ErrServeHTMLFile
+	// }
+
+	// return nil
 }
 
 func Tom(c echo.Context) error {
@@ -67,7 +111,7 @@ func Tom(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed processing request")
 	}
 
-	return c.String(http.StatusOK, fmt.Sprintf("This is the param name you sent us '%s'", person.Name))
+	return c.String(http.StatusOK, fmt.Sprintf("This is the param name you sent us '%s'", person))
 
 }
 
@@ -97,6 +141,8 @@ func connectDB(c echo.Context, crud string) error {
 	switch crud {
 	case "inserted":
 		insertUsers(c, client)
+		// case "deleted":
+		// 	deletedUsers(c, client)
 	}
 
 	return c.String(http.StatusOK, fmt.Sprintf("Successfully performed '%v' in MongoDB", crud))
@@ -117,8 +163,10 @@ func insertUsers(c echo.Context, client *mongo.Client) error {
 		return c.String(http.StatusBadRequest, "Error: no username specified")
 	}
 
-	rand.Seed(20)
-	rn := rand.Intn(1000)
+	start := time.Now().Second()
+
+	rand.Seed(int64(start))
+	rn := rand.Intn(10000)
 	user := bson.D{{"uid", rn}, {"username", param}}
 	result, err := usersCollection.InsertOne(context.TODO(), user)
 	if err != nil {
@@ -128,3 +176,17 @@ func insertUsers(c echo.Context, client *mongo.Client) error {
 	fmt.Println(result.InsertedID)
 	return nil
 }
+
+// func deletedUsers(c echo.Context, client *mongo.Client) error {
+// 	usersCollection := client.Database("usernames").Collection("users")
+
+// 	param := c.QueryParam("username")
+// 	if param == "" {
+// 		return c.String(http.StatusBadRequest, "Error: no username specified")
+// 	}
+
+// 	result := usersCollection.FindOneAndDelete(context.TODO(), bson.M{"username": param})
+
+// 	fmt.Printf("Found %v", result.Decode())
+// 	return nil
+// }
