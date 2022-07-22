@@ -49,7 +49,9 @@ func main() {
 
 	http.Handle("/", http.FileServer(http.Dir("./assets")))
 	http.Handle("/login", http.FileServer(http.Dir("./assets ")))
-	http.HandleFunc("/process", process)
+	http.HandleFunc("/process", process)      //login process
+	http.HandleFunc("/signup", processSignup) //signup process
+	http.HandleFunc("/loggin", processLogin)  //signup process
 
 	http.ListenAndServe(":3000", nil)
 }
@@ -77,6 +79,73 @@ func getParams(c echo.Context) error {
 
 func process(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Processing...")
+	parseForm(w, r)
+}
+
+func processLogin(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Processing Login...")
+	usr, err := parseForm(w, r)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	usersCollection := client.Database("usernames").Collection("users")
+	doc := bson.D{{"uid", usr.UserName}, {"username", usr.Password}}
+
+	var results []bson.D
+	cursor, err := usersCollection.Find(context.TODO(), doc)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	if err = cursor.All(context.TODO(), &results); err != nil {
+		panic(err)
+	}
+	for _, result := range results {
+		fmt.Println(result)
+	}
+
+	// err = tpl.ExecuteTemplate(w, "in.gohtml", usr)
+	// if err != nil {
+	// 	return err
+	// }
+
+}
+
+func processSignup(w http.ResponseWriter, r *http.Request) {
+	usr, err := parseForm(w, r)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	usersCollection := client.Database("usernames").Collection("users")
+	start := time.Now().Second()
+
+	rand.Seed(int64(start))
+	rn := rand.Intn(10000)
+	fmt.Printf("%v", rn)
+
+	user := bson.D{{"uid", usr.UserName}, {"password", usr.Password}}
+	result, err := usersCollection.InsertOne(context.TODO(), user)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(result.InsertedID)
+
+}
+
+func parseForm(w http.ResponseWriter, r *http.Request) (Person, error) {
 	usr := r.FormValue("username")
 	pw := r.FormValue("password")
 
@@ -85,12 +154,11 @@ func process(w http.ResponseWriter, r *http.Request) {
 		Password: pw,
 	}
 
-	tpl.ExecuteTemplate(w, "in.gohtml", person)
-	// if err != nil {
-	// 	return ErrServeHTMLFile
-	// }
+	if person.UserName == "" || person.Password == "" {
+		return person, errors.New("username or password cannot be empty")
+	}
 
-	// return nil
+	return person, nil
 }
 
 func Tom(c echo.Context) error {
