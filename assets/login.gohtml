@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+<body>
+    <section class="form-component">
+        <section class="form-container">
+            <form action="/loggin" method="Post">
+                <section class="fields-container">
+                    <section class="fields">
+                        <label>Username: </label>
+                    </section>
+                    <section class="fields">
+                        <input type="text" id="username" placeholder="Username" value="" name="username"/>
+                    </section>
+                    <section class="fields">
+                        <label>Password: </label>
+                    </section>
+                    <section class="fields">
+                        <input type="password" id="password" placeholder="Password" value="" name="password"/>
+                    </section>
+                </section>
+                <button onclick="noReload()">submit</button>
+            </form>
+        </section>
+    </section>
+    
+</body>
+</html>
+
+<style>
+    body {
+        background-color: skyblue;
+    }
+
+    .form-component {
+        background-color: white;
+        border: solid 2px rgb(87, 86, 86);
+        margin: 3% 15% 0% 15%;
+    }
+
+    .form-container {
+        padding: 10px;
+        display: flex;
+        justify-content: center;
+        padding-right: 30px;
+    }
+
+    .fields-container {
+        display: grid;
+        grid-template-columns: 50% 50%;
+        grid-template-rows: 50% 50%;
+        align-items: center;
+    }
+
+    .fields label {
+        display: block;
+
+    }
+
+    .fields input {
+        padding: 10px;
+    }
+</style>
