@@ -47,17 +47,26 @@ func main() {
 	// e.GET("/params/:data", getParams)
 	// e.Logger.Fatal(e.Start(":1323"))
 
-	http.Handle("/", http.FileServer(http.Dir("./assets")))
-	http.Handle("/login", http.FileServer(http.Dir("./assets ")))
-	http.HandleFunc("/process", process)      //login process
+	http.Handle("/", http.FileServer(http.Dir("./vfiles")))
+	//http.Handle("/login", http.FileServer(http.Dir("./assets ")))
+	http.HandleFunc("/process", process) //login process
+	http.HandleFunc("/serve", serve)
 	http.HandleFunc("/signup", processSignup) //signup process
 	http.HandleFunc("/loggin", processLogin)  //signup process
 
 	http.ListenAndServe(":3000", nil)
 }
 
+func serve(w http.ResponseWriter, r *http.Request) {
+	err := tpl.Execute(w, "App.vue")
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+}
+
 func init() {
-	tpl = template.Must(template.ParseGlob("assets/*.gohtml"))
+	//tpl = template.Must(template.ParseGlob("assets/*.gohtml"))
+	tpl = template.Must(template.ParseGlob("vfiles/*.vue"))
 }
 
 func serveFiles(w http.ResponseWriter, r *http.Request) {
@@ -89,31 +98,19 @@ func processLogin(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
+	//check that user exists
+	var count = checkForUserDB(usr)
+	if count == 0 {
+		fmt.Println("No such document found in the db")
+		panic(count)
+	}
+
+	fmt.Println("success login")
+
+	err = tpl.ExecuteTemplate(w, "in.gohtml", usr)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("Error: %v\n", err)
 	}
-
-	usersCollection := client.Database("usernames").Collection("users")
-	doc := bson.D{{"uid", usr.UserName}, {"username", usr.Password}}
-
-	var results []bson.D
-	cursor, err := usersCollection.Find(context.TODO(), doc)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	if err = cursor.All(context.TODO(), &results); err != nil {
-		panic(err)
-	}
-	for _, result := range results {
-		fmt.Println(result)
-	}
-
-	// err = tpl.ExecuteTemplate(w, "in.gohtml", usr)
-	// if err != nil {
-	// 	return err
-	// }
 
 }
 
@@ -123,17 +120,20 @@ func processSignup(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 
+	//check taht user does not already exist before inserting
+	var count = checkForUserDB(usr)
+	if count != 0 {
+		fmt.Println("User already exists in the db")
+		panic(count)
+	}
+
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err != nil {
 		fmt.Println(err)
+		panic(err)
 	}
 
 	usersCollection := client.Database("usernames").Collection("users")
-	start := time.Now().Second()
-
-	rand.Seed(int64(start))
-	rn := rand.Intn(10000)
-	fmt.Printf("%v", rn)
 
 	user := bson.D{{"uid", usr.UserName}, {"password", usr.Password}}
 	result, err := usersCollection.InsertOne(context.TODO(), user)
@@ -143,6 +143,23 @@ func processSignup(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(result.InsertedID)
 
+}
+
+func checkForUserDB(usr Person) int64 {
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	user := bson.D{{"uid", usr.UserName}, {"password", usr.Password}}
+	usersCollection := client.Database("usernames").Collection("users")
+	filter := user
+	count, err := usersCollection.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		panic(err)
+	}
+
+	return count
 }
 
 func parseForm(w http.ResponseWriter, r *http.Request) (Person, error) {

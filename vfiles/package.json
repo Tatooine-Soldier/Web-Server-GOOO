@@ -1,0 +1,15 @@
+{
+  "name": "vfiles",
+  "version": "1.0.0",
+  "description": "",
+  "main": "App.vue",
+  "scripts": {
+    "test": "mocha",
+    "start": "main.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "vue": "^3.2.37"
+  }
+}

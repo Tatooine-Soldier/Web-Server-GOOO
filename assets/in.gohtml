@@ -7,6 +7,50 @@
     <title>Logged In</title>
 </head>
 <body>
-    {{.UserName}} {{.Password}}
+    <section class="body-wrapper">
+        <nav>
+            <section>
+                 <section class="heading">
+                    <b>PROFILE</b>
+                </section>
+            </section>
+            <section>
+                <ul>
+                    <li>Home</li>
+                    <li>About</li>
+                    <li>Contact</li>
+                </ul>
+            </section>
+            <section>{{.UserName}}</section>
+        </nav>
+    </section>
 </body>
 </html>
+
+<style>
+body {
+    background-color: black;
+    font-family: "Helvetica Neue";
+    color: white; 
+    text-align: center;
+    margin: 0px;
+}
+
+nav {
+    display: grid;
+    grid-template-columns: 25% 50% 25%;
+    align-items: center;
+    background-color: white;
+    color: black;
+}
+
+ul {
+    font-size: 16pt;
+}
+
+ul li {
+    display: inline;
+    padding: 10px;
+}
+
+</style>
